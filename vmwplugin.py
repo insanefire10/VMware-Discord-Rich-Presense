@@ -5,31 +5,32 @@ import time
 import psutil
 import pyautogui
 import random
+import wmi
 
 #Enter Client ID here
 client_id = ""
 
 #detect if VMware/Discord is active
 def vmdetect():
-    return "vmware.exe" in (i.name() for i in psutil.process_iter())
+    c = wmi.WMI()
+    for process in c.Win32_Process(name="vmware.exe"):
+        return True
+    return False
 
 def discorddetect():
-    return "Discord.exe" in (i.name() for i in psutil.process_iter())
+    c = wmi.WMI()
+    for process in c.Win32_Process(name="Discord.exe"):
+        return True
+    return False
 
 #Update Discord Status
 def update(newVM):
     OSString = newVM
     OSlogo = OSimage(OSString)
-
-    if OSlogo == "kali":
-        vmstate = "Found your web server"
-    elif OSlogo == "ubuntu":
-        vmstate = "Deleting /etc/passwd"
-    else:
-        vmstate = detailJokeList[random.randint(0,len(detailJokeList)-1)]
+    vmstate = detailJokeList[random.randint(0,len(detailJokeList)-1)]
     
-    if OSlogo == "vmwarelogo":
-        minilogo = None
+    if OSlogo == "https://imgur.com/bXH4oFE.png":
+        minilogo = " "
     else: 
         minilogo = "https://imgur.com/bXH4oFE.png"
 
@@ -84,7 +85,7 @@ detailJokeList = ("Deleting System32",
 #main
 
 #Waits 25 seconds upon system startup to start the process to ensure Discord starts up
-time.sleep(2)
+time.sleep(20)
 
 #flags:
 flagCon = False #Global flag to determine if RPC session is connected
@@ -94,18 +95,21 @@ currentVM = " " #Holds name of current working VM. Runs the Update function if u
 print("Running")
 while True:
     time.sleep(5) #Script will check if Discord and VMware are running every 5 seconds
-    if not discorddetect():
-        print("Discord Not Detected")
-        if flagCon == True:
-            RPC.close()
-        flagCon = False
-        continue
+
     
     if vmdetect():
+        if not discorddetect():
+            print("Discord Not Detected")
+            if flagCon == True:
+                RPC.close()
+            flagCon = False
+            continue
+
         pollVM = getGuestOS()
         if currentVM == pollVM:
             continue
         currentVM = pollVM
+
         if flagVMw == False:
             RPC = Presence(client_id)
             try:
@@ -119,8 +123,8 @@ while True:
         print("Detected")
 
     else:
-        print("VMW not detect")
         if flagVMw == True:
+            currentVM = " "
             flagVMw = False
             flagCon = False 
             RPC.clear()
