@@ -1,33 +1,37 @@
 #Created by InsaneFire. This program is free to use and improve on if you wish. Please leave this line as a way to give credit to me, the original author :)
 
 from pypresence import Presence
+from osaliases import OSDict
 import time
-import psutil
 import pyautogui
-import random
 import wmi
+import win32gui
+
+global timeVar
+c = wmi.WMI()
 
 #Enter Client ID here
-client_id = ""
+client_id = "1201392534656647238"
 
 #detect if VMware/Discord is active
 def vmdetect():
-    c = wmi.WMI()
     for process in c.Win32_Process(name="vmware.exe"):
         return True
     return False
 
 def discorddetect():
-    c = wmi.WMI()
     for process in c.Win32_Process(name="Discord.exe"):
         return True
     return False
 
 #Update Discord Status
-def update(newVM):
+def update(newVM, newState):
     OSString = newVM
     OSlogo = OSimage(OSString)
-    vmstate = detailJokeList[random.randint(0,len(detailJokeList)-1)]
+    if(newState):
+        vmstate = "Currently Working"
+    else:
+        vmstate = "Running in background"
     
     if OSlogo == "https://imgur.com/bXH4oFE.png":
         minilogo = " "
@@ -40,8 +44,8 @@ def update(newVM):
             large_image=OSlogo,
             details=OSString,
             small_image=minilogo,
-            start=time.time(),
-            buttons=[{"label":"Get VMware RPC for Discord","url":"https://github.com/insanefire10/VMware-Discord-Rich-Presense"}]
+            start=timeVar,
+            buttons=[{"label":"Get Rich Presence for VMware","url":"https://github.com/insanefire10/VMware-Discord-Rich-Presense"}]
         )
     except:
         print("Connection Error: Cannot Update, API error")
@@ -57,58 +61,54 @@ def getGuestOS():
     return "VMware Workstation"
 
 def OSimage(osname):
+    osname = osname.lower()
     for key, value in OSDict.items():
         if key in osname:
             return value
     return "https://imgur.com/bXH4oFE.png"
 
-#List Objects
-OSDict = {"Windows 10":"https://imgur.com/kxO5E9i.png",
-          "Windows 11":"https://imgur.com/o8kY5or.png",
-          "Windows 8":"https://imgur.com/FvYjSTf.png",
-          "Windows 7":"https://imgur.com/L77FPCt.png",
-          "Windows Vista":"https://imgur.com/L77FPCt.png",
-          "Windows XP":"https://imgur.com/L77FPCt.png",
-          "Windows Server":"https://i.imgur.com/nVHdZcn.png",
-          "Windows":"https://imgur.com/L77FPCt.png",
-          "Kali":"https://imgur.com/R1WBgCS.png",
-          "Ubuntu":"https://imgur.com/Woznh88.png"}
+def isForeground():
+    w=win32gui
+    if "VMware Workstation" in w.GetWindowText(w.GetForegroundWindow()):
+        return True
+    return False
 
-detailJokeList = ("Deleting System32",
-                  "Messing with Registry Keys",
-                  "Another Day another BSOD",
-                  "Alt + F4", 
-                  "Sending Microsoft my data",
-                  "I have your SMB",
-                  "Dodging OneDrive")
+
 
 #main
 
-#Waits 25 seconds upon system startup to start the process to ensure Discord starts up
-time.sleep(20)
+#Waits 15 seconds upon system startup to start the process to ensure Discord starts up
+time.sleep(15)
 
 #flags:
 flagCon = False #Global flag to determine if RPC session is connected
 flagVMw = False #Global flag to determine if VMware is running, and if so, turns true and starts RPC session
 currentVM = " " #Holds name of current working VM. Runs the Update function if user switches to another VM
+currentStatus = False #Holds if VMware is in the foreground
+pollTime = 5
 
 print("Running")
 while True:
-    time.sleep(5) #Script will check if Discord and VMware are running every 5 seconds
+    time.sleep(pollTime) #Script will check if Discord and VMware are running every 2/5 seconds
 
     
     if vmdetect():
         if not discorddetect():
             print("Discord Not Detected")
+            pollTime = 5
             if flagCon == True:
                 RPC.close()
             flagCon = False
             continue
 
         pollVM = getGuestOS()
-        if currentVM == pollVM:
+        pollStatus = isForeground()
+
+        if (currentVM == pollVM) and (currentStatus == pollStatus):
             continue
         currentVM = pollVM
+        currentStatus = pollStatus
+
 
         if flagVMw == False:
             RPC = Presence(client_id)
@@ -119,14 +119,17 @@ while True:
                 continue
             flagVMw = True
             flagCon = True
-        update(pollVM)
+            pollTime = 2
+            timeVar = time.time()
+        update(pollVM, pollStatus)
         print("Detected")
 
     else:
         if flagVMw == True:
             currentVM = " "
             flagVMw = False
-            flagCon = False 
+            flagCon = False
+            pollTime = 5
             RPC.clear()
             RPC.close()
         flagVMw = False
