@@ -6,21 +6,35 @@ import time
 import pyautogui
 import wmi
 import win32gui
-
-global timeVar
-c = wmi.WMI()
+import psutil
 
 #Enter Client ID here
 client_id = "1201392534656647238"
 
 #detect if VMware/Discord is active
 def vmdetect():
+    global flagVMw
+    global vmwarePID
+    if(flagVMw):
+        if psutil.pid_exists(vmwarePID):
+            return True
+        vmwarePID = 0
+        return False
     for process in c.Win32_Process(name="vmware.exe"):
+        vmwarePID = process.processId
         return True
     return False
 
 def discorddetect():
+    global flagCon
+    global discordPID
+    if(flagCon):
+        if psutil.pid_exists(discordPID):
+            return True
+        discordPID = 0
+        return False
     for process in c.Win32_Process(name="Discord.exe"):
+        discordPID = process.processId
         return True
     return False
 
@@ -80,16 +94,20 @@ def isForeground():
 #Waits 15 seconds upon system startup to start the process to ensure Discord starts up
 time.sleep(15)
 
-#flags:
+#flags/vars:
 flagCon = False #Global flag to determine if RPC session is connected
 flagVMw = False #Global flag to determine if VMware is running, and if so, turns true and starts RPC session
 currentVM = " " #Holds name of current working VM. Runs the Update function if user switches to another VM
 currentStatus = False #Holds if VMware is in the foreground
 pollTime = 5
+vmwarePID = 0
+discordPID = 0
+global timeVar
+c = wmi.WMI()
 
 print("Running")
 while True:
-    time.sleep(pollTime) #Script will check if Discord and VMware are running every 2/5 seconds
+    time.sleep(pollTime) #Script will check if Discord and VMware are running every 2 seconds (Vmware is running) or 5 seconds (VMware is not running)
 
     
     if vmdetect():
