@@ -1,0 +1,5 @@
+psutil==5.9.8
+PyAutoGUI==0.9.54
+pypresence==4.3.0
+pywin32==306
+WMI==1.5.1

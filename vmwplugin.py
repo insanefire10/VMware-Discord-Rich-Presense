@@ -11,6 +11,9 @@ import psutil
 #Enter Client ID here
 client_id = "1201392534656647238"
 
+#Enter current Github
+githuburl = 'https://github.com/insanefire10/VMware-Discord-Rich-Presense'
+
 #detect if VMware/Discord is active
 def vmdetect():
     global flagVMw
@@ -39,13 +42,9 @@ def discorddetect():
     return False
 
 #Update Discord Status
-def update(newVM, newState):
+def update(newVM):
     OSString = newVM
     OSlogo = OSimage(OSString)
-    if(newState):
-        vmstate = "Currently Working"
-    else:
-        vmstate = "Running in background"
     
     if OSlogo == "https://imgur.com/bXH4oFE.png":
         minilogo = " "
@@ -54,9 +53,8 @@ def update(newVM, newState):
 
     try:
         RPC.update(
-            state=vmstate,
+            state=OSString,
             large_image=OSlogo,
-            details=OSString,
             small_image=minilogo,
             start=timeVar,
             buttons=[{"label":"Get Rich Presence for VMware","url":"https://github.com/insanefire10/VMware-Discord-Rich-Presense"}]
@@ -80,15 +78,6 @@ def OSimage(osname):
         if key in osname:
             return value
     return "https://imgur.com/bXH4oFE.png"
-
-def isForeground():
-    w=win32gui
-    if "VMware Workstation" in w.GetWindowText(w.GetForegroundWindow()):
-        return True
-    return False
-
-
-
 #main
 
 #Waits 15 seconds upon system startup to start the process to ensure Discord starts up
@@ -99,7 +88,7 @@ flagCon = False #Global flag to determine if RPC session is connected
 flagVMw = False #Global flag to determine if VMware is running, and if so, turns true and starts RPC session
 currentVM = " " #Holds name of current working VM. Runs the Update function if user switches to another VM
 currentStatus = False #Holds if VMware is in the foreground
-pollTime = 5
+pollTime = 10
 vmwarePID = 0
 discordPID = 0
 global timeVar
@@ -120,14 +109,11 @@ while True:
             continue
 
         pollVM = getGuestOS()
-        pollStatus = isForeground()
 
-        if (currentVM == pollVM) and (currentStatus == pollStatus):
+        if (currentVM == pollVM):
             continue
         currentVM = pollVM
-        currentStatus = pollStatus
-
-
+        
         if flagVMw == False:
             RPC = Presence(client_id)
             try:
@@ -139,7 +125,7 @@ while True:
             flagCon = True
             pollTime = 2
             timeVar = time.time()
-        update(pollVM, pollStatus)
+        update(pollVM)
         print("Detected")
 
     else:
@@ -147,7 +133,7 @@ while True:
             currentVM = " "
             flagVMw = False
             flagCon = False
-            pollTime = 5
+            pollTime = 10
             RPC.clear()
             RPC.close()
         flagVMw = False
